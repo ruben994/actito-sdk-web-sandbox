@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "types": [],
+    "target": "ES2017",
+    "module": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "downlevelIteration": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

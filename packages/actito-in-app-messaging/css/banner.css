@@ -1,0 +1,54 @@
+.actito .actito__iam-banner {
+    position: fixed;
+    top: var(--actito-modal-margin);
+    left: 50%;
+    transform: translate(-50%);
+    max-width: calc(100vw - var(--actito-modal-margin));
+    max-height: calc(100vh - var(--actito-modal-margin));
+    z-index: var(--actito-layer-highest);
+
+    background: var(--actito-surface);
+    border-radius: 4px;
+    box-shadow: 0 0 32px -8px rgba(0, 0, 0, 0.52);
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: row;
+    column-gap: 16px;
+
+    width: 500px;
+    padding: 16px;
+}
+
+.actito .actito__iam-banner-image {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+}
+
+.actito .actito__iam-banner-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.actito .actito__iam-banner-content-title {
+    font-size: 16px;
+    font-weight: 600;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    margin-bottom: 4px;
+}
+
+.actito .actito__iam-banner-content-message {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}

@@ -1,0 +1,54 @@
+name: Update preview environments
+
+on:
+  workflow_dispatch:
+    inputs:
+      update_test_environment:
+        description: Update test environment
+        type: boolean
+        required: true
+        default: false
+      update_production_environment:
+        description: Update production environment
+        type: boolean
+        required: true
+        default: false
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build-sample-app.yml
+    permissions:
+      contents: read
+
+  upload_test_environment:
+    name: Test
+    needs:
+      - build
+    if: ${{ inputs.update_test_environment }}
+    uses: ./.github/workflows/upload-sample-app.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets:
+      actito_services: ${{ secrets.SAMPLE_APP_TEST_ACTITO_SERVICES }}
+      aws_iam_role: ${{ secrets.AWS_IAM_ROLE }}
+      aws_region: ${{ secrets.AWS_REGION }}
+      bucket_name: ${{ secrets.SAMPLE_APP_TEST_BUCKET_NAME }}
+      distribution_id: ${{ secrets.SAMPLE_APP_TEST_DISTRIBUTION_ID }}
+
+  upload_production_environment:
+    if: ${{ inputs.update_production_environment }}
+    name: Production
+    needs:
+      - build
+    uses: ./.github/workflows/upload-sample-app.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets:
+      actito_services: ${{ secrets.SAMPLE_APP_ACTITO_SERVICES }}
+      aws_iam_role: ${{ secrets.AWS_IAM_ROLE }}
+      aws_region: ${{ secrets.AWS_REGION }}
+      bucket_name: ${{ secrets.SAMPLE_APP_BUCKET_NAME }}
+      distribution_id: ${{ secrets.SAMPLE_APP_DISTRIBUTION_ID }}

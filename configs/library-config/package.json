@@ -1,0 +1,41 @@
+{
+  "name": "@actito/library-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint": "./eslint.config.js",
+    "./rollup": "./rollup.library.config.js",
+    "./rollup-umbrella": "./rollup.umbrella.config.js",
+    "./jest": "./jest.config.js"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.33.0",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "autoprefixer": "^10.4.21",
+    "cssnano": "^7.1.0",
+    "esbuild": "^0.25.9",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.4.1",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^16.1.1",
+    "postcss-preset-env": "^10.2.4",
+    "prettier": "^3.6.2",
+    "rollup": "^4.46.3",
+    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-svg-import": "^3.0.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1"
+  }
+}

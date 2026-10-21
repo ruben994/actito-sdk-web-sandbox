@@ -1,0 +1,1 @@
+importScripts("./serwist/sw.js");

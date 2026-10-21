@@ -1,0 +1,51 @@
+name: Validate release version
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: The release branch, e.g. release/5.0.2 or release/5.1.0-beta.1.
+        required: true
+        type: string
+    outputs:
+      version:
+        description: The version in the branch name, e.g. 5.0.2.
+        value: ${{ jobs.validate.outputs.version }}
+      prerelease:
+        description: Whether the version is a prerelease (true or false).
+        value: ${{ jobs.validate.outputs.prerelease }}
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+
+    steps:
+      - name: Validate the version
+        id: version
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          VERSION="${BRANCH#release/}"
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Branch $BRANCH must be named release/x.y.z or release/x.y.z-beta.n."
+            exit 1
+          fi
+
+          if [[ "$VERSION" == *-canary.* ]]; then
+            echo "::error::Canary versions can't be released through release branches."
+            exit 1
+          fi
+
+          if [[ "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "::notice::Validated version $VERSION"

@@ -1,0 +1,13 @@
+.actito .actito__notification[data-notification-type="re.notifica.notification.URLResolver"] {
+    width: 100%;
+    height: 100%;
+}
+
+.actito .actito__notification[data-notification-type="re.notifica.notification.URLResolver"] .actito__modal-content {
+    flex-grow: 1;
+}
+
+.actito .actito__notification-url-iframe {
+    flex-grow: 1;
+    border: none;
+}

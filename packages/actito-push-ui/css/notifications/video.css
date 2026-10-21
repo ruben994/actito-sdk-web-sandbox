@@ -1,0 +1,11 @@
+.actito .actito__notification[data-notification-type="re.notifica.notification.Video"] {
+    width: calc(100% - 2 * var(--actito-modal-margin));
+    max-width: calc(900px - 2 * var(--actito-modal-margin));
+}
+
+.actito .actito__notification-video,
+.actito .actito__notification-video-iframe {
+    width: 100%;
+    height: 500px;
+    border: none;
+}

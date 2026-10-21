@@ -1,0 +1,74 @@
+name: Bump release version
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate_version:
+    name: Validate version
+    if: startsWith(github.head_ref, 'release/') && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/validate-release-version.yml
+    with:
+      branch: ${{ github.head_ref }}
+
+  bump_version:
+    name: Bump version
+    needs:
+      - validate_version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # This is required for pushing the version bump commit
+    env:
+      HUSKY: 0    # Skip the git hooks when committing the version bump
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Updates every package.json, lerna.json and yarn.lock, and runs scripts/version.mjs for
+      # version.ts and the CHANGELOG.md heading. Files already at the version are left unchanged.
+      - name: Bump the version
+        env:
+          VERSION: ${{ needs.validate_version.outputs.version }}
+        run: yarn lerna version "$VERSION" --force-publish --no-private --no-git-tag-version --no-push --yes
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.validate_version.outputs.version }}
+        run: |
+          git add -u
+
+          if git diff --cached --quiet; then
+            echo "::notice::The libraries are already at version $VERSION."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: bump version to $VERSION"
+          git push

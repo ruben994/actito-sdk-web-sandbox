@@ -1,0 +1,115 @@
+.actito.actito-push-floating-button .actito__floating-button {
+    position: fixed;
+    margin: 32px;
+    z-index: var(--actito-layer-high);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    cursor: pointer;
+    user-select: none;
+
+    background-color: var(--actito-primary-container);
+    color: var(--actito-on-primary-container);
+    box-shadow: var(--actito-elevation-1);
+}
+
+.actito.actito-push-floating-button .actito__floating-button:active {
+    box-shadow: var(--actito-elevation-2);
+}
+
+.actito.actito-push-floating-button .actito__floating-button:focus {
+    box-shadow: var(--actito-elevation-3);
+}
+
+.actito.actito-push-floating-button .actito__floating-button:hover {
+    box-shadow: var(--actito-elevation-4);
+}
+
+.actito.actito-push-floating-button .actito__floating-button__top {
+    top: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__vertical-center {
+    top: 0;
+    bottom: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__bottom {
+    bottom: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__start {
+    left: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__horizontal-center {
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__end {
+    right: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button-icon {
+    fill: var(--actito-on-primary-container);
+    width: 24px;
+    height: 24px;
+}
+
+.actito.actito-push-floating-button .actito__floating-button-tooltip {
+    visibility: hidden;
+    position: absolute;
+    padding: 12px 24px;
+    z-index: var(--actito-layer-high);
+
+    background-color: var(--actito-surface);
+    color: var(--actito-on-surface);
+    border-radius: 8px;
+    box-shadow: var(--actito-elevation-4);
+    max-width: calc(100vw - 64px);
+    width: max-content;
+    overflow-wrap: break-word;
+
+    /* Fade in tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__top .actito__floating-button-tooltip {
+    top: calc(100% + 16px);
+}
+
+.actito.actito-push-floating-button .actito__floating-button__vertical-center .actito__floating-button-tooltip {
+
+}
+
+.actito.actito-push-floating-button .actito__floating-button__bottom .actito__floating-button-tooltip {
+    bottom: calc(100% + 16px);
+}
+
+.actito.actito-push-floating-button .actito__floating-button__start .actito__floating-button-tooltip {
+    left: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button__vertical-center .actito__floating-button-tooltip {
+
+}
+
+.actito.actito-push-floating-button .actito__floating-button__end .actito__floating-button-tooltip {
+    right: 0;
+}
+
+.actito.actito-push-floating-button .actito__floating-button:hover .actito__floating-button-tooltip {
+    visibility: visible;
+    opacity: 1;
+}

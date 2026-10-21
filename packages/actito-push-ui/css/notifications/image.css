@@ -1,0 +1,21 @@
+.actito .actito__notification[data-notification-type="re.notifica.notification.Image"] {
+    max-width: calc(900px - 2 * var(--actito-modal-margin));
+}
+
+.actito .actito__notification-image-slider {
+    width: 100%;
+    display: flex;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+}
+
+.actito .actito__notification-image-slider-item {
+    scroll-snap-align: start;
+    min-width: 100%;
+    display: flex;
+}
+
+.actito .actito__notification-image-slider-image {
+    width: 100%;
+    object-fit: contain;
+}

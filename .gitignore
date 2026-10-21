@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Logs
+yarn-debug.log
+yarn-error.log
+
+# WebStorm
+.idea/
+
+# Build directories
+/packages/**/dist/
+/packages/**/.build/
+
+# Misc.
+.DS_Store
+
+# Yarn Berry
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

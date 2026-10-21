@@ -1,0 +1,123 @@
+import { createCloudNotificationReply } from '@actito/web-cloud-api';
+import type { ActitoNotification, ActitoNotificationAction } from '@actito/web-core';
+import { presentWindowClient } from './window-client';
+import { getCloudApiEnvironment } from '~/internal/cloud-api/environment';
+import { InvalidWorkerConfigurationError } from '~/internal/configuration/errors';
+import { getCurrentDeviceId, parseWorkerConfiguration } from '~/internal/configuration/parser';
+import { getEmailUrl, getSmsUrl, getTelephoneUrl } from '~/internal/utils';
+import { logger } from '~/logger';
+
+// Let TS know this is scoped to a service worker.
+declare const self: ServiceWorkerGlobalScope;
+
+export async function presentNotificationAction(
+  notification: ActitoNotification,
+  action: ActitoNotificationAction,
+) {
+  const config = parseWorkerConfiguration();
+  if (!config) throw new InvalidWorkerConfigurationError();
+
+  if (config.standalone) {
+    logger.debug('Presenting a notification action in standalone mode.');
+    await presentWindowClient(notification, action);
+    return;
+  }
+
+  switch (action.type) {
+    case 're.notifica.action.App':
+      await presentAppNotificationAction(action);
+      break;
+    case 're.notifica.action.Browser':
+      await presentBrowserNotificationAction(action);
+      break;
+    case 're.notifica.action.InAppBrowser':
+      await presentInAppBrowserNotificationAction(action);
+      break;
+    case 're.notifica.action.Mail':
+      await presentMailNotificationAction(action);
+      break;
+    case 're.notifica.action.SMS':
+      await presentSmsNotificationAction(action);
+      break;
+    case 're.notifica.action.Telephone':
+      await presentTelephoneNotificationAction(action);
+      break;
+    default:
+      await presentWindowClient(notification, action);
+      return;
+  }
+
+  await createNotificationReply(notification, action);
+}
+
+async function presentAppNotificationAction(action: ActitoNotificationAction): Promise<void> {
+  try {
+    const urlStr = action.target?.trim() ? action.target.trim() : '/';
+    await self.clients.openWindow(urlStr);
+  } catch {
+    // The promise fails when opening a deep link
+    // even when it succeeds in processing it.
+  }
+}
+
+async function presentBrowserNotificationAction(action: ActitoNotificationAction): Promise<void> {
+  const urlStr = action.target?.trim() ? action.target.trim() : '/';
+  await self.clients.openWindow(urlStr);
+}
+
+async function presentInAppBrowserNotificationAction(
+  action: ActitoNotificationAction,
+): Promise<void> {
+  const urlStr = action.target?.trim() ? action.target.trim() : '/';
+  await self.clients.openWindow(urlStr);
+}
+
+async function presentMailNotificationAction(action: ActitoNotificationAction): Promise<void> {
+  if (!action.target) throw new Error('Invalid action target.');
+
+  try {
+    await self.clients.openWindow(getEmailUrl(action.target));
+  } catch {
+    // The promise fails when opening a deep link
+    // even when it succeeds in processing it.
+  }
+}
+
+async function presentSmsNotificationAction(action: ActitoNotificationAction): Promise<void> {
+  if (!action.target) throw new Error('Invalid action target.');
+
+  try {
+    await self.clients.openWindow(getSmsUrl(action.target));
+  } catch {
+    // The promise fails when opening a deep link
+    // even when it succeeds in processing it.
+  }
+}
+
+async function presentTelephoneNotificationAction(action: ActitoNotificationAction): Promise<void> {
+  if (!action.target) throw new Error('Invalid action target.');
+
+  try {
+    await self.clients.openWindow(getTelephoneUrl(action.target));
+  } catch {
+    // The promise fails when opening a deep link
+    // even when it succeeds in processing it.
+  }
+}
+
+export async function createNotificationReply(
+  notification: ActitoNotification,
+  action: ActitoNotificationAction,
+) {
+  await createCloudNotificationReply({
+    environment: await getCloudApiEnvironment(),
+    payload: {
+      notification: notification.id,
+      label: action.label,
+      deviceID: getCurrentDeviceId(),
+      data: {
+        target: action.target,
+      },
+    },
+  });
+}

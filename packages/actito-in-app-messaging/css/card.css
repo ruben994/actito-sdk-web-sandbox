@@ -1,0 +1,71 @@
+.actito .actito__iam-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: calc(100vw - var(--actito-modal-margin));
+    max-height: calc(100vh - var(--actito-modal-margin));
+    z-index: var(--actito-layer-highest);
+
+    background: var(--actito-surface);
+    border-radius: 4px;
+    box-shadow: 0 0 32px -8px rgba(0, 0, 0, 0.52);
+
+    display: flex;
+    flex-direction: column;
+    row-gap: 16px;
+
+    width: 500px;
+    padding: 16px;
+}
+
+.actito .actito__iam-card-header {
+    position: relative;
+}
+
+.actito .actito__iam-card-header-image {
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    object-fit: cover;
+}
+
+.actito .actito__iam-card .actito__close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.actito .actito__iam-card-content {
+
+}
+
+.actito .actito__iam-card-content-title {
+    font-size: 16px;
+    font-weight: 600;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    margin-bottom: 4px;
+}
+
+.actito .actito__iam-card:not(:has(> .actito__iam-card-header)) .actito__iam-card-content-title {
+    margin-right: 32px;
+}
+
+.actito .actito__iam-card-content-message {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.actito .actito__iam-card-actions {
+    display: flex;
+    flex-direction: row-reverse;
+    column-gap: 16px;
+}

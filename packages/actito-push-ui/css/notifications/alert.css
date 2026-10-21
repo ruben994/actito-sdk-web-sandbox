@@ -1,0 +1,93 @@
+.actito .actito__notification[data-notification-type="re.notifica.notification.Alert"] {
+    width: 500px;
+}
+
+.actito .actito__notification-alert {
+    display: flex;
+    flex-direction: column;
+}
+
+.actito .actito__notification-alert-attachment {
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    max-height: 250px;
+    margin-bottom: 16px;
+}
+
+.actito .actito__notification-alert-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.actito .actito__notification-alert-subtitle {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.actito .actito__notification-alert-message {
+}
+
+.actito .actito__notification-actions {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 8px;
+}
+
+.actito .actito__notification-actions__list {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+.actito .actito__notification-actions__list > * {
+    width: 100%;
+}
+
+/* Callback */
+
+.actito .actito__modal-footer__callback {
+    display: flex;
+    justify-content: right;
+    column-gap: 8px;
+}
+
+/* Callback: Camera */
+
+.actito .actito__camera-callback {
+    width: calc(100% - 2 * var(--actito-modal-margin));
+    max-width: calc(900px - 2 * var(--actito-modal-margin));
+}
+
+.actito .actito__camera-callback-video {
+    aspect-ratio: 16 / 9;
+    background-color: black;
+}
+
+.actito .actito__camera-callback-canvas {
+    aspect-ratio: 16 / 9;
+    background-color: black;
+}
+
+/* Callback: Keyboard */
+
+.actito .actito__keyboard-callback {
+    width: calc(100% - 2 * var(--actito-modal-margin));
+    max-width: calc(700px - 2 * var(--actito-modal-margin));
+}
+
+.actito .actito__keyboard-callback-textarea {
+    width: 100%;
+    height: calc(6 * 1.4em + 16px);
+
+    background: var(--actito-surface);
+    color: var(--actito-on-surface);
+    font-size: 14px;
+    line-height: 1.4em;
+    padding: 8px;
+    border: none;
+    outline: none;
+    resize: none;
+}

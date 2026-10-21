@@ -1,0 +1,57 @@
+.actito-push-onboarding .actito__onboarding-modal {
+    min-width: 360px;
+    max-width: 480px;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-content {
+    flex-direction: row;
+    column-gap: 16px;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-text-content {
+    display: flex;
+    flex-direction: column;
+    row-gap: 4px;
+    overflow: hidden;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-title {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 400;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+
+    margin-top: 16px;
+}
+
+.actito.actito-push-onboarding .actito__onboarding-actions {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: flex-end;
+    column-gap: 8px;
+    overflow: hidden;
+}

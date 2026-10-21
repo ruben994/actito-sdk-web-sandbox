@@ -1,0 +1,84 @@
+.actito .actito__button {
+    background-color: var(--actito-button-background-color);
+    border-radius: 4px;
+    color: var(--actito-button-text-color);
+    cursor: pointer;
+    line-height: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+}
+
+.actito .actito__button:hover {
+    background-color: var(--actito-button-background-color--hover);
+    color: var(--actito-button-text-color--hover);
+}
+
+.actito .actito__button--primary {
+    --actito-button-background-color: var(--actito-primary);
+    --actito-button-text-color: var(--actito-on-primary);
+
+    --actito-button-background-color--hover: var(--actito-primary-hover);
+    --actito-button-text-color--hover: var(--actito-on-primary);
+}
+
+.actito .actito__button--secondary {
+    --actito-button-background-color: clear;
+    --actito-button-text-color: var(--actito-secondary);
+
+    --actito-button-background-color--hover: var(--actito-surface-hover);
+    --actito-button-text-color--hover: var(--actito-secondary);
+}
+
+.actito .actito__button--destructive {
+    --actito-button-background-color: clear;
+    --actito-button-text-color: var(--actito-error);
+
+    --actito-button-background-color--hover: rgba(255, 218, 214, 0.6);
+    --actito-button-text-color--hover: var(--actito-error);
+}
+
+.actito .actito__close-button {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 300ms ease-in-out, border-radius 300ms ease-in-out;
+}
+
+.actito .actito__close-button:hover {
+    background-color: var(--actito-surface-hover);
+}
+
+.actito .actito__close-button--solid {
+    background-color: var(--actito-surface-hover);
+    border-radius: 16px;
+}
+
+.actito .actito__close-button--solid:hover {
+    border-radius: 4px;
+}
+
+.actito .actito__close-button .actito__close-button-icon {
+    width: 24px;
+    height: 24px;
+    fill: var(--actito-on-surface);
+}
+
+[data-actito-theme="dark"] .actito .actito__button--destructive {
+    --actito-button-background-color--hover: rgba(255, 218, 214, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+    .actito .actito__button--destructive {
+        --actito-button-background-color--hover: rgba(255, 218, 214, 0.2);
+    }
+}

@@ -1,0 +1,7 @@
+@import "actito-web/in-app-messaging/in-app-messaging.css";
+@import "actito-web/push/push.css";
+@import "actito-web/push-ui/push-ui.css";
+
+@import "tailwindcss";
+
+@plugin "@tailwindcss/forms";

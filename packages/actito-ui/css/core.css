@@ -1,0 +1,98 @@
+.actito,
+[data-actito-theme="light"] .actito {
+    --actito-primary: #2B42F7;
+    --actito-primary-hover: #071CC3;
+    --actito-on-primary: rgba(255, 255, 255, 0.87);
+
+    --actito-secondary: #2B42F7;
+
+    --actito-primary-container: #DFE0FF;
+    --actito-on-primary-container: #000A64;
+
+    --actito-error: #BA1A1A;
+
+    --actito-surface: #FFFFFF;
+    --actito-surface-hover: #F4F5F9;
+    --actito-on-surface: rgba(0, 0, 0, 0.87);
+
+    --actito-shadow-rgb: 0 0 0;
+
+    --actito-elevation-1: 0px 3px 1px -2px rgb(var(--actito-shadow-rgb) / 0.2), 0px 2px 2px 0px rgb(var(--actito-shadow-rgb) / 0.14), 0px 1px 5px 0px rgb(var(--actito-shadow-rgb) / 0.12);
+    --actito-elevation-2: 0px 2px 4px -1px rgb(var(--actito-shadow-rgb) / 0.2), 0px 4px 5px 0px rgb(var(--actito-shadow-rgb) / 0.14), 0px 1px 10px 0px rgb(var(--actito-shadow-rgb) / 0.12);
+    --actito-elevation-3: 0px 5px 5px -3px rgb(var(--actito-shadow-rgb) / 0.2), 0px 8px 10px 1px rgb(var(--actito-shadow-rgb) / 0.14), 0px 3px 14px 2px rgb(var(--actito-shadow-rgb) / 0.12);
+    --actito-elevation-4: 0px 5px 5px -3px rgb(var(--actito-shadow-rgb) / 0.2), 0px 8px 10px 1px rgb(var(--actito-shadow-rgb) / 0.14), 0px 3px 14px 2px rgb(var(--actito-shadow-rgb) / 0.12);
+
+    --actito-backdrop-background: rgba(0, 0, 0, 0.5);
+
+    --actito-layer-medium: 536870912;
+    --actito-layer-high: 1073741824;
+    --actito-layer-highest: 2147483647;
+
+    --actito-modal-margin: 64px;
+}
+
+[data-actito-theme="dark"] .actito {
+    --actito-primary: #2B4EFF;
+    --actito-primary-hover: #2746E6;
+
+    --actito-secondary: #3B82F6;
+
+    --actito-error: #EF4444;
+
+    --actito-surface: #27282B;
+    --actito-surface-hover: #3D3D40;
+    --actito-on-surface: rgba(255, 255, 255, 0.87);
+}
+
+@media (prefers-color-scheme: dark) {
+    .actito {
+        --actito-primary: #2B4EFF;
+        --actito-primary-hover: #2746E6;
+
+        --actito-secondary: #3B82F6;
+
+        --actito-error: #EF4444;
+
+        --actito-surface: #27282B;
+        --actito-surface-hover: #3D3D40;
+        --actito-on-surface: rgba(255, 255, 255, 0.87);
+    }
+}
+
+/* CSS reset */
+
+.actito * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.actito h1,
+.actito h2,
+.actito h3,
+.actito h4,
+.actito h5,
+.actito h6,
+.actito p,
+.actito span,
+.actito a,
+.actito button {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 20px;
+
+    background-color: transparent;
+    border: none;
+    color: var(--actito-on-surface);
+    text-decoration: none;
+    text-transform: none;
+}
+
+.actito a:hover,
+.actito button:hover {
+    background-color: initial;
+    border: initial;
+    color: initial;
+    text-decoration: initial;
+}

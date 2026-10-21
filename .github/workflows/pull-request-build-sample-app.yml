@@ -1,0 +1,124 @@
+name: Preview PR changes
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build-sample-app.yml
+    permissions:
+      contents: read
+
+  upload_test_environment:
+    name: Test
+    needs:
+      - build
+    if: contains(github.event.pull_request.labels.*.name, 'preview:test')
+    uses: ./.github/workflows/upload-sample-app.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets:
+      actito_services: ${{ secrets.SAMPLE_APP_TEST_ACTITO_SERVICES }}
+      aws_iam_role: ${{ secrets.AWS_IAM_ROLE }}
+      aws_region: ${{ secrets.AWS_REGION }}
+      bucket_name: ${{ secrets.SAMPLE_APP_TEST_BUCKET_NAME }}
+      distribution_id: ${{ secrets.SAMPLE_APP_TEST_DISTRIBUTION_ID }}
+
+  upload_production_environment:
+    name: Production
+    if: contains(github.event.pull_request.labels.*.name, 'preview:production')
+    needs:
+      - build
+    uses: ./.github/workflows/upload-sample-app.yml
+    permissions:
+      id-token: write
+      contents: read
+    secrets:
+      actito_services: ${{ secrets.SAMPLE_APP_ACTITO_SERVICES }}
+      aws_iam_role: ${{ secrets.AWS_IAM_ROLE }}
+      aws_region: ${{ secrets.AWS_REGION }}
+      bucket_name: ${{ secrets.SAMPLE_APP_BUCKET_NAME }}
+      distribution_id: ${{ secrets.SAMPLE_APP_DISTRIBUTION_ID }}
+
+  comment_urls_on_pr:
+    name: Comment PR with live URLs
+    needs:
+      - upload_test_environment
+      - upload_production_environment
+    if: always() && (needs.upload_test_environment.result == 'success' || needs.upload_production_environment.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write    # This is required for creating and deleting comments in the PR
+    steps:
+      - name: Create or update PR comment
+        uses: actions/github-script@v9
+        env:
+          UPLOAD_TEST_RESULT: ${{ needs.upload_test_environment.result }}
+          UPLOAD_PRODUCTION_RESULT: ${{ needs.upload_production_environment.result }}
+          TEST_URL: ${{ vars.SAMPLE_APP_TEST_URL }}
+          PRODUCTION_URL: ${{ vars.SAMPLE_APP_URL }}
+        with:
+          script: |
+            const marker = '<!-- sample-app-deploy-comment -->';
+            
+            core.startGroup('Prepare the comment content');
+            
+            let message = `${marker}\nThe deployment pipeline finished successfully. Check the live updates here: \n\n`;
+            
+            if (process.env.UPLOAD_TEST_RESULT === 'success') {
+              const testUrl = process.env.TEST_URL;
+              message += `**Test Environment:** [${testUrl}](${testUrl})\n`;
+              core.info('Test URL added to the comment.');
+            }
+            
+            if (process.env.UPLOAD_PRODUCTION_RESULT === 'success') {
+              const productionUrl = process.env.PRODUCTION_URL;
+              message += `**Production Environment:** [${productionUrl}](${productionUrl})\n`;
+              core.info('Production URL added to comment.');
+            }
+            
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
+            message += `\n*Last deploy: ${timestamp}*`;
+            
+            core.endGroup();
+            
+            core.startGroup('Manage PR comment');
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const existentComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes(marker)
+            );
+            
+            if (existentComment) {
+              core.info('Existing deployment comment found. Updating it...');
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existentComment.id,
+                body: message
+              });
+            } else {
+              core.info('No existing comment found. Posting new comment...');
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
+            core.endGroup();

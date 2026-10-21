@@ -1,0 +1,105 @@
+name: Check PR changelog
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: write    # This is required for creating and deleting comments in the PR
+  contents: read    # This is necessary to read the list of commits and files in the PR
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check_changelog:
+    name: Check changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warn if changelog wasn't updated
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- changelog-warning-comment -->';
+            
+            core.startGroup('Analyze commits');
+            
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const hasFeatOrFix = commits.some(c => {
+              const msg = c.commit.message.toLowerCase();
+              return msg.startsWith('feat') || msg.startsWith('fix');
+            });
+
+            if (!hasFeatOrFix) {
+              core.info('No feat/fix commits found. Skipping changelog check.');
+              core.endGroup();
+              return;
+            }
+            
+            core.info(`feat/fix commits found. Total commits analyzed: ${commits.length}`);
+            core.endGroup();
+            
+            core.startGroup('Verify CHANGELOG.md');
+            
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const isChangelogModified = files.some(f => f.filename === 'CHANGELOG.md');
+            
+            if(isChangelogModified) {
+              core.info('Changelog was modified.');
+            } else {
+              core.warning("Changelog wasn't modified.");
+            }
+            
+            core.endGroup();
+            
+            core.startGroup('Manage PR comment');
+            
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existingComment = comments.find(c => c.user.type === 'Bot' && c.body.includes(marker));
+
+            if (!isChangelogModified) {
+              const warningMsg = `${marker}\n⚠️ **Changelog Warning:** This PR contains \`feat\` or \`fix\` commits, but the **CHANGELOG.md** file has not been updated.\n\nPlease update the changelog accordingly.`;
+            
+              if (!existingComment) {
+                core.info('There is no warning comment. Posting warning...');
+            
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: warningMsg
+                });
+              } else {
+                core.info('Warning comment already exists. Skipping.')
+              }
+            } else {
+              if (existingComment) {
+                 core.info('A previous warning was found. Cleaning up old warning...');
+            
+                 await github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: existingComment.id
+                 });
+              }
+            }
+            
+            core.endGroup();

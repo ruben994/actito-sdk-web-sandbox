@@ -1,0 +1,360 @@
+name: Release SDK
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  # Outside the actito/actito-sdk-web repository, e.g. in a sandbox copy used for testing, nothing is
+  # published to NPM or uploaded to the CDN.
+  DRY_RUN: ${{ github.repository != 'actito/actito-sdk-web' }}
+
+jobs:
+  validate_version:
+    name: Validate version
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    uses: ./.github/workflows/validate-release-version.yml
+    with:
+      branch: ${{ github.event.pull_request.head.ref }}
+
+  # Builds and checks everything, previews what will be published and creates the GitHub release as a
+  # draft. Nothing is published by this job.
+  prepare:
+    name: Prepare release
+    needs:
+      - validate_version
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # This is required for requesting the JWT (AWS role)
+      contents: write   # This is required for actions/checkout and for creating the draft GitHub release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Validate the versions
+        env:
+          VERSION: ${{ needs.validate_version.outputs.version }}
+        run: |
+          FAILED=0
+
+          # Validate lerna.json version
+          LERNA_VERSION=$(node -p "require('./lerna.json').version")
+          if [ "$LERNA_VERSION" != "$VERSION" ]; then
+            echo "::error file=lerna.json::Version $LERNA_VERSION doesn't match $VERSION."
+            FAILED=1
+          fi
+
+          # Validate each package.json version of every actito package
+          for MANIFEST in packages/*/package.json; do
+            PACKAGE_VERSION=$(node -p "require('./$MANIFEST').version")
+            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+              echo "::error file=$MANIFEST::Version $PACKAGE_VERSION doesn't match $VERSION."
+              FAILED=1
+            fi
+          done
+
+          # Validate ./packages/actito-core/src/internal/version.ts
+          SDK_VERSION=$(sed -nE "s/.*SDK_VERSION = '([^']+)'.*/\1/p" packages/actito-core/src/internal/version.ts)
+          if [ "$SDK_VERSION" != "$VERSION" ]; then
+            echo "::error file=packages/actito-core/src/internal/version.ts::SDK_VERSION $SDK_VERSION doesn't match $VERSION."
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo "::notice::Preparing version $VERSION"
+
+      - name: Build the libraries
+        run: yarn build
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Run tests
+        run: yarn test
+
+      - name: Check package types
+        run: yarn attw
+
+      # The latest variant is only built for X.Y.Z versions.
+      - name: Check the CDN files
+        env:
+          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+        run: |
+          FAILED=0
+
+          if [ -z "$(ls -A packages/actito/dist/cdn/stable 2>/dev/null)" ]; then
+            echo "::error::packages/actito/dist/cdn/stable is missing or empty."
+            FAILED=1
+          fi
+
+          if [ "$PRERELEASE" = "true" ]; then
+            echo "::notice::Prerelease: the latest files on the CDN won't be updated."
+          elif [ -z "$(ls -A packages/actito/dist/cdn/latest 2>/dev/null)" ]; then
+            echo "::error::packages/actito/dist/cdn/latest is missing or empty."
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Preview the NPM packages
+        env:
+          VERSION: ${{ needs.validate_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          NPM_CONFIG_DRY_RUN: true
+        run: |
+          set -o pipefail
+          yarn lerna publish from-package --yes --pre-dist-tag next 2>&1 | tee "$RUNNER_TEMP/npm-preview.log"
+
+          if [ "$PRERELEASE" = "true" ]; then
+            DIST_TAG=next
+          else
+            DIST_TAG=latest
+          fi
+
+          {
+            echo "# Release $VERSION"
+            echo
+            echo "## NPM"
+            echo
+            echo "Dist-tag: \`$DIST_TAG\`"
+            echo
+            echo '```'
+            sed -n '/^Found [0-9]* package/,/^$/p' "$RUNNER_TEMP/npm-preview.log"
+            echo '```'
+            echo
+            echo "<details><summary>Package contents</summary>"
+            echo
+            echo '```'
+            grep '^lerna notice' "$RUNNER_TEMP/npm-preview.log" | grep -v '^lerna notice cli ' | sed 's/^lerna notice //'
+            echo '```'
+            echo
+            echo "</details>"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Authenticate with AWS
+        if: env.DRY_RUN != 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Preview the CDN upload
+        env:
+          BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
+          VERSION: ${{ needs.validate_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+        run: |
+          # Usage: preview_sync <local folder> <bucket path> [extra aws s3 sync options]
+          # A dry run has no access to the bucket, so every local file is listed as an upload.
+          preview_sync() {
+            if [ "$DRY_RUN" = "true" ]; then
+              find "$1" -type f | sort | sed "s|^$1/\(.*\)$|(dry run) upload: $1/\1 to $2\1|"
+            else
+              aws s3 sync "$1" "s3://$BUCKET_NAME/$2" --dryrun "${@:3}" | sed "s|s3://$BUCKET_NAME/||"
+            fi
+          }
+
+          {
+            echo "## CDN"
+            echo
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run: without access to the bucket, every built file is listed as an upload."
+              echo
+            fi
+            echo "### \`libs/web/v5/$VERSION/\`"
+            echo
+            echo '```'
+            preview_sync packages/actito/dist/cdn/stable "libs/web/v5/$VERSION/"
+            echo '```'
+            echo
+
+            if [ "$PRERELEASE" = "true" ]; then
+              echo "\`libs/web/v5/latest/\` won't be updated, because $VERSION is a prerelease."
+            else
+              echo "### \`libs/web/v5/latest/\`"
+              echo
+              echo '```'
+              preview_sync packages/actito/dist/cdn/latest "libs/web/v5/latest/" --delete
+              echo '```'
+              echo
+              echo "CloudFront invalidation: \`/libs/web/v5/latest/*\`"
+            fi
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The tag is only created when the draft is published, after the approval.
+      - name: Create the draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          TARGET: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          # The release notes are the contents of the "## <version>" section of the CHANGELOG.md.
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          awk -v heading="## $VERSION" '
+            $0 == heading { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+
+          if ! grep -qxF "## $VERSION" CHANGELOG.md; then
+            echo "::warning file=CHANGELOG.md::The CHANGELOG.md has no \"## $VERSION\" section."
+          elif [ -z "$(tr -d '[:space:]' < "$NOTES_FILE")" ]; then
+            echo "::warning file=CHANGELOG.md::The \"## $VERSION\" section of the CHANGELOG.md is empty."
+          fi
+
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            if [ "$(gh release view "$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
+              gh release edit "$VERSION" --target "$TARGET" --prerelease="$PRERELEASE" --notes-file "$NOTES_FILE"
+            else
+              echo "::notice::The GitHub release $VERSION is already published."
+            fi
+          else
+            ARGS=(--draft --target "$TARGET" --title "$VERSION" --notes-file "$NOTES_FILE")
+            if [ "$PRERELEASE" = "true" ]; then
+              ARGS+=(--prerelease)
+            fi
+
+            gh release create "$VERSION" "${ARGS[@]}"
+          fi
+
+          RELEASE_URL=$(gh release view "$VERSION" --json url --jq .url)
+          {
+            echo "## GitHub release"
+            echo
+            echo "[$VERSION]($RELEASE_URL) (prerelease: $PRERELEASE), targeting \`$TARGET\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The publish job uses these files, so it publishes exactly what was previewed here.
+      - name: Upload the build
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-build
+          path: |
+            packages/**/dist/
+            !packages/**/node_modules/**
+
+  # Waits for a reviewer to approve the "release" environment before publishing.
+  publish:
+    name: Publish release
+    needs:
+      - validate_version
+      - prepare
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write   # This is required for requesting the JWT (AWS role and NPM trusted publishing)
+      contents: write   # This is required for actions/checkout and for publishing the GitHub release
+
+    steps:
+      - name: Announce the dry run
+        if: env.DRY_RUN == 'true'
+        run: echo "::notice::Dry run in $GITHUB_REPOSITORY. Nothing is published to NPM or uploaded to the CDN."
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: yarn
+          registry-url: https://registry.npmjs.org
+
+      # NPM trusted publishing requires npm 11.5.1 or later.
+      - name: Update npm
+        run: npm install -g npm@11
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Download the build
+        uses: actions/download-artifact@v8
+        with:
+          name: release-build
+          path: packages
+
+      # Authenticates through NPM trusted publishing, which also generates the provenance statements.
+      # Prereleases are published under the "next" dist-tag, so they are never installed by default.
+      - name: Publish to NPM
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            export NPM_CONFIG_DRY_RUN=true
+          fi
+
+          yarn lerna publish from-package --yes --pre-dist-tag next
+
+      - name: Authenticate with AWS
+        if: env.DRY_RUN != 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload the versioned files to the CDN
+        if: env.DRY_RUN != 'true'
+        env:
+          BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
+          VERSION: ${{ needs.validate_version.outputs.version }}
+        run: aws s3 sync packages/actito/dist/cdn/stable "s3://$BUCKET_NAME/libs/web/v5/$VERSION/"
+
+      - name: Upload the latest files to the CDN
+        if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
+        env:
+          BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
+        run: aws s3 sync packages/actito/dist/cdn/latest "s3://$BUCKET_NAME/libs/web/v5/latest/" --delete
+
+      - name: Invalidate the latest files in CloudFront
+        if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
+        env:
+          DISTRIBUTION_ID: ${{ secrets.CDN_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --paths '/libs/web/v5/latest/*'
+
+      # Publishing the draft creates the tag on the merge commit.
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate_version.outputs.version }}
+        run: |
+          if [ "$(gh release view "$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
+            gh release edit "$VERSION" --draft=false
+          else
+            echo "::notice::The GitHub release $VERSION is already published."
+          fi
