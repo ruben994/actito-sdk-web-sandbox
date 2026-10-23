@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Upcoming Release
+
+- New feature A
+- Fix B
+
 ## 5.0.2
 
 - Fix a bug where a notification was presented with an attachment when its URI was null or empty.
