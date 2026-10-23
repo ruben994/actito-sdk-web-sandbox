@@ -39,14 +39,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-assets@npm:^5.0.2, @actito/web-assets@workspace:packages/actito-assets":
+"@actito/web-assets@npm:^5.0.3, @actito/web-assets@workspace:packages/actito-assets":
   version: 0.0.0-use.local
   resolution: "@actito/web-assets@workspace:packages/actito-assets"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.4.1"
     eslint: "npm:^9.33.0"
@@ -57,12 +57,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-cloud-api@npm:^5.0.2, @actito/web-cloud-api@workspace:packages/actito-cloud-api":
+"@actito/web-cloud-api@npm:^5.0.3, @actito/web-cloud-api@workspace:packages/actito-cloud-api":
   version: 0.0.0-use.local
   resolution: "@actito/web-cloud-api@workspace:packages/actito-cloud-api"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.4.1"
     eslint: "npm:^9.33.0"
@@ -73,13 +73,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-core@npm:^5.0.2, @actito/web-core@workspace:packages/actito-core":
+"@actito/web-core@npm:^5.0.3, @actito/web-core@workspace:packages/actito-core":
   version: 0.0.0-use.local
   resolution: "@actito/web-core@workspace:packages/actito-core"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     eslint: "npm:^9.33.0"
@@ -90,14 +90,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-geo@npm:^5.0.2, @actito/web-geo@workspace:packages/actito-geo":
+"@actito/web-geo@npm:^5.0.3, @actito/web-geo@workspace:packages/actito-geo":
   version: 0.0.0-use.local
   resolution: "@actito/web-geo@workspace:packages/actito-geo"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@types/google.maps": "npm:^3.58.1"
     eslint: "npm:^9.33.0"
@@ -107,15 +107,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-in-app-messaging@npm:^5.0.2, @actito/web-in-app-messaging@workspace:packages/actito-in-app-messaging":
+"@actito/web-in-app-messaging@npm:^5.0.3, @actito/web-in-app-messaging@workspace:packages/actito-in-app-messaging":
   version: 0.0.0-use.local
   resolution: "@actito/web-in-app-messaging@workspace:packages/actito-in-app-messaging"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
-    "@actito/web-ui": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
+    "@actito/web-ui": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     eslint: "npm:^9.33.0"
@@ -126,14 +126,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-inbox@npm:^5.0.2, @actito/web-inbox@workspace:packages/actito-inbox":
+"@actito/web-inbox@npm:^5.0.3, @actito/web-inbox@workspace:packages/actito-inbox":
   version: 0.0.0-use.local
   resolution: "@actito/web-inbox@workspace:packages/actito-inbox"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     eslint: "npm:^9.33.0"
@@ -144,7 +144,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-logger@npm:^5.0.2, @actito/web-logger@workspace:packages/actito-logger":
+"@actito/web-logger@npm:^5.0.3, @actito/web-logger@workspace:packages/actito-logger":
   version: 0.0.0-use.local
   resolution: "@actito/web-logger@workspace:packages/actito-logger"
   dependencies:
@@ -162,9 +162,9 @@ __metadata:
   resolution: "@actito/web-push-sw@workspace:packages/actito-push-sw"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     eslint: "npm:^9.33.0"
@@ -175,15 +175,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-push-ui@npm:^5.0.2, @actito/web-push-ui@workspace:packages/actito-push-ui":
+"@actito/web-push-ui@npm:^5.0.3, @actito/web-push-ui@workspace:packages/actito-push-ui":
   version: 0.0.0-use.local
   resolution: "@actito/web-push-ui@workspace:packages/actito-push-ui"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
-    "@actito/web-ui": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
+    "@actito/web-ui": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     "@types/google.maps": "npm:^3.58.1"
@@ -195,15 +195,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-push@npm:^5.0.2, @actito/web-push@workspace:packages/actito-push":
+"@actito/web-push@npm:^5.0.3, @actito/web-push@workspace:packages/actito-push":
   version: 0.0.0-use.local
   resolution: "@actito/web-push@workspace:packages/actito-push"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
-    "@actito/web-ui": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
+    "@actito/web-ui": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.3.0"
     eslint: "npm:^9.33.0"
@@ -214,7 +214,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-ui@npm:^5.0.2, @actito/web-ui@workspace:packages/actito-ui":
+"@actito/web-ui@npm:^5.0.3, @actito/web-ui@workspace:packages/actito-ui":
   version: 0.0.0-use.local
   resolution: "@actito/web-ui@workspace:packages/actito-ui"
   dependencies:
@@ -229,14 +229,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@actito/web-user-inbox@npm:^5.0.2, @actito/web-user-inbox@workspace:packages/actito-user-inbox":
+"@actito/web-user-inbox@npm:^5.0.3, @actito/web-user-inbox@workspace:packages/actito-user-inbox":
   version: 0.0.0-use.local
   resolution: "@actito/web-user-inbox@workspace:packages/actito-user-inbox"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-cloud-api": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-logger": "npm:^5.0.2"
+    "@actito/web-cloud-api": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-logger": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     "@jest/globals": "npm:^30.4.1"
     eslint: "npm:^9.33.0"
@@ -4964,14 +4964,14 @@ __metadata:
   resolution: "actito-web@workspace:packages/actito"
   dependencies:
     "@actito/library-config": "workspace:^"
-    "@actito/web-assets": "npm:^5.0.2"
-    "@actito/web-core": "npm:^5.0.2"
-    "@actito/web-geo": "npm:^5.0.2"
-    "@actito/web-in-app-messaging": "npm:^5.0.2"
-    "@actito/web-inbox": "npm:^5.0.2"
-    "@actito/web-push": "npm:^5.0.2"
-    "@actito/web-push-ui": "npm:^5.0.2"
-    "@actito/web-user-inbox": "npm:^5.0.2"
+    "@actito/web-assets": "npm:^5.0.3"
+    "@actito/web-core": "npm:^5.0.3"
+    "@actito/web-geo": "npm:^5.0.3"
+    "@actito/web-in-app-messaging": "npm:^5.0.3"
+    "@actito/web-inbox": "npm:^5.0.3"
+    "@actito/web-push": "npm:^5.0.3"
+    "@actito/web-push-ui": "npm:^5.0.3"
+    "@actito/web-user-inbox": "npm:^5.0.3"
     "@arethetypeswrong/cli": "npm:^0.18.2"
     eslint: "npm:^9.33.0"
     rollup: "npm:^4.46.3"

@@ -31,13 +31,10 @@ jobs:
         run: |
           VERSION="${BRANCH#release/}"
 
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+          # Stable (x.y.z) or beta (x.y.z-beta.n) versions only, without leading zeros.
+          NUMBER='(0|[1-9][0-9]*)'
+          if [[ ! "$VERSION" =~ ^$NUMBER\.$NUMBER\.$NUMBER(-beta\.$NUMBER)?$ ]]; then
             echo "::error::Branch $BRANCH must be named release/x.y.z or release/x.y.z-beta.n."
-            exit 1
-          fi
-
-          if [[ "$VERSION" == *-canary.* ]]; then
-            echo "::error::Canary versions can't be released through release branches."
             exit 1
           fi
 

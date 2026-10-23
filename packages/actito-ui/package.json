@@ -1,6 +1,6 @@
 {
   "name": "@actito/web-ui",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "The core UI package for use in the Actito Web SDK.",
   "author": "Actito <mobile@actito.com> (https://actito.com)",
   "license": "MIT",

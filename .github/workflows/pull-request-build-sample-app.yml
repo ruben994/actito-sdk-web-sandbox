@@ -23,7 +23,7 @@ jobs:
     name: Test
     needs:
       - build
-    if: contains(github.event.pull_request.labels.*.name, 'preview:test')
+    if: contains(github.event.pull_request.labels.*.name, 'preview-sample-app:test')
     uses: ./.github/workflows/upload-sample-app.yml
     permissions:
       id-token: write
@@ -37,7 +37,7 @@ jobs:
 
   upload_production_environment:
     name: Production
-    if: contains(github.event.pull_request.labels.*.name, 'preview:production')
+    if: contains(github.event.pull_request.labels.*.name, 'preview-sample-app:production')
     needs:
       - build
     uses: ./.github/workflows/upload-sample-app.yml

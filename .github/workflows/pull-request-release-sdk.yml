@@ -16,9 +16,20 @@ env:
   # published to NPM or uploaded to the CDN.
   DRY_RUN: ${{ github.repository != 'actito/actito-sdk-web' }}
 
+  # The built CDN files, and the bucket path they're uploaded to: <path>/<version>/ and <path>/latest/.
+  # The core import URLs in the CDN build (configs/library-config/rollup.umbrella.config.js) must use
+  # the same bucket path.
+  CDN_STABLE_DIR: packages/actito/dist/cdn/stable
+  CDN_LATEST_DIR: packages/actito/dist/cdn/latest
+  CDN_BUCKET_PATH: libs/web/v5
+
+  # Beta versions are published to NPM under this dist-tag instead of "latest", so they are never
+  # installed by default.
+  NPM_PRERELEASE_DIST_TAG: beta
+
 jobs:
   validate_version:
-    name: Validate version
+    name: Validate the branch version
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     uses: ./.github/workflows/validate-release-version.yml
     with:
@@ -53,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Validate the versions
+      - name: Validate the versions throughout the project
         env:
           VERSION: ${{ needs.validate_version.outputs.version }}
         run: |
@@ -107,15 +118,15 @@ jobs:
         run: |
           FAILED=0
 
-          if [ -z "$(ls -A packages/actito/dist/cdn/stable 2>/dev/null)" ]; then
-            echo "::error::packages/actito/dist/cdn/stable is missing or empty."
+          if [ -z "$(ls -A "$CDN_STABLE_DIR" 2>/dev/null)" ]; then
+            echo "::error::$CDN_STABLE_DIR is missing or empty."
             FAILED=1
           fi
 
           if [ "$PRERELEASE" = "true" ]; then
             echo "::notice::Prerelease: the latest files on the CDN won't be updated."
-          elif [ -z "$(ls -A packages/actito/dist/cdn/latest 2>/dev/null)" ]; then
-            echo "::error::packages/actito/dist/cdn/latest is missing or empty."
+          elif [ -z "$(ls -A "$CDN_LATEST_DIR" 2>/dev/null)" ]; then
+            echo "::error::$CDN_LATEST_DIR is missing or empty."
             FAILED=1
           fi
 
@@ -130,10 +141,10 @@ jobs:
           NPM_CONFIG_DRY_RUN: true
         run: |
           set -o pipefail
-          yarn lerna publish from-package --yes --pre-dist-tag next 2>&1 | tee "$RUNNER_TEMP/npm-preview.log"
+          yarn lerna publish from-package --yes --pre-dist-tag "${NPM_PRERELEASE_DIST_TAG:?}" 2>&1 | tee "$RUNNER_TEMP/npm-preview.log"
 
           if [ "$PRERELEASE" = "true" ]; then
-            DIST_TAG=next
+            DIST_TAG="$NPM_PRERELEASE_DIST_TAG"
           else
             DIST_TAG=latest
           fi
@@ -152,7 +163,7 @@ jobs:
             echo "<details><summary>Package contents</summary>"
             echo
             echo '```'
-            grep '^lerna notice' "$RUNNER_TEMP/npm-preview.log" | grep -v '^lerna notice cli ' | sed 's/^lerna notice //'
+            grep '^lerna notice' "$RUNNER_TEMP/npm-preview.log" | grep -v '^lerna notice cli ' | sed 's/^lerna notice //' || true
             echo '```'
             echo
             echo "</details>"
@@ -172,6 +183,8 @@ jobs:
           VERSION: ${{ needs.validate_version.outputs.version }}
           PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
         run: |
+          set -o pipefail
+
           # Usage: preview_sync <local folder> <bucket path> [extra aws s3 sync options]
           # A dry run has no access to the bucket, so every local file is listed as an upload.
           preview_sync() {
@@ -189,26 +202,26 @@ jobs:
               echo "Dry run: without access to the bucket, every built file is listed as an upload."
               echo
             fi
-            echo "### \`libs/web/v5/$VERSION/\`"
+            echo "### \`$CDN_BUCKET_PATH/$VERSION/\`"
             echo
             echo '```'
-            preview_sync packages/actito/dist/cdn/stable "libs/web/v5/$VERSION/"
+            preview_sync "$CDN_STABLE_DIR" "$CDN_BUCKET_PATH/$VERSION/"
             echo '```'
             echo
 
             if [ "$PRERELEASE" = "true" ]; then
-              echo "\`libs/web/v5/latest/\` won't be updated, because $VERSION is a prerelease."
+              echo "\`$CDN_BUCKET_PATH/latest/\` won't be updated, because $VERSION is a prerelease."
             else
-              echo "### \`libs/web/v5/latest/\`"
+              echo "### \`$CDN_BUCKET_PATH/latest/\`"
               echo
               echo '```'
-              preview_sync packages/actito/dist/cdn/latest "libs/web/v5/latest/" --delete
+              preview_sync "$CDN_LATEST_DIR" "$CDN_BUCKET_PATH/latest/" --delete
               echo '```'
               echo
-              echo "CloudFront invalidation: \`/libs/web/v5/latest/*\`"
+              echo "CloudFront invalidation: \`/$CDN_BUCKET_PATH/latest/*\`"
             fi
             echo
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The tag is only created when the draft is published, after the approval.
       - name: Create the draft GitHub release
@@ -248,11 +261,18 @@ jobs:
           fi
 
           RELEASE_URL=$(gh release view "$VERSION" --json url --jq .url)
+          COMMIT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$TARGET"
+          if [ "$PRERELEASE" = "true" ]; then
+            KIND=beta
+          else
+            KIND=stable
+          fi
+
           {
             echo "## GitHub release"
             echo
-            echo "[$VERSION]($RELEASE_URL) (prerelease: $PRERELEASE), targeting \`$TARGET\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "**Draft release:** [$VERSION]($RELEASE_URL) · $KIND · tag will point to [\`${TARGET:0:7}\`]($COMMIT_URL)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The publish job uses these files, so it publishes exactly what was previewed here.
       - name: Upload the build
@@ -309,14 +329,14 @@ jobs:
           path: packages
 
       # Authenticates through NPM trusted publishing, which also generates the provenance statements.
-      # Prereleases are published under the "next" dist-tag, so they are never installed by default.
+      # Beta versions are published under the NPM_PRERELEASE_DIST_TAG dist-tag.
       - name: Publish to NPM
         run: |
           if [ "$DRY_RUN" = "true" ]; then
             export NPM_CONFIG_DRY_RUN=true
           fi
 
-          yarn lerna publish from-package --yes --pre-dist-tag next
+          yarn lerna publish from-package --yes --pre-dist-tag "${NPM_PRERELEASE_DIST_TAG:?}"
 
       - name: Authenticate with AWS
         if: env.DRY_RUN != 'true'
@@ -330,13 +350,13 @@ jobs:
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
           VERSION: ${{ needs.validate_version.outputs.version }}
-        run: aws s3 sync packages/actito/dist/cdn/stable "s3://$BUCKET_NAME/libs/web/v5/$VERSION/"
+        run: aws s3 sync "$CDN_STABLE_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/$VERSION/"
 
       - name: Upload the latest files to the CDN
         if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
-        run: aws s3 sync packages/actito/dist/cdn/latest "s3://$BUCKET_NAME/libs/web/v5/latest/" --delete
+        run: aws s3 sync "$CDN_LATEST_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/latest/" --delete
 
       - name: Invalidate the latest files in CloudFront
         if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
@@ -345,7 +365,7 @@ jobs:
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "$DISTRIBUTION_ID" \
-            --paths '/libs/web/v5/latest/*'
+            --paths "/$CDN_BUCKET_PATH/latest/*"
 
       # Publishing the draft creates the tag on the merge commit.
       - name: Publish the GitHub release
