@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Upcoming Release
+
+- New feature C
+
 ## 5.0.3
 
 - New feature A
