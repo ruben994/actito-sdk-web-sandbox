@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Upcoming Release
+## 5.0.4
 
 - New feature C
 
