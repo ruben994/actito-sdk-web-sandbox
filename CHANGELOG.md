@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.0.4
+
+- New feature C
+
 ## 5.0.3
 
 - New feature A

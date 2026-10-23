@@ -99,6 +99,8 @@ jobs:
                     repo: context.repo.repo,
                     comment_id: existingComment.id
                  });
+              } else {
+                core.info('No previous warning comment found. Nothing to clean up.')
               }
             }
             
