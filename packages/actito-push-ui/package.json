@@ -1,6 +1,6 @@
 {
   "name": "@actito/web-push-ui",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "The push ui package for the 'actito-web' umbrella package.",
   "author": "Actito <mobile@actito.com> (https://actito.com)",
   "license": "MIT",
@@ -40,10 +40,10 @@
     "./dist/actito-push-ui.css": "./dist/actito-push-ui.css"
   },
   "dependencies": {
-    "@actito/web-cloud-api": "^5.0.2",
-    "@actito/web-core": "^5.0.2",
-    "@actito/web-logger": "^5.0.2",
-    "@actito/web-ui": "^5.0.2",
+    "@actito/web-cloud-api": "^5.0.3",
+    "@actito/web-core": "^5.0.3",
+    "@actito/web-logger": "^5.0.3",
+    "@actito/web-ui": "^5.0.3",
     "tslib": "^2.8.1"
   },
   "devDependencies": {

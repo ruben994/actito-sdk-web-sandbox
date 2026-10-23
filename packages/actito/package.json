@@ -1,6 +1,6 @@
 {
   "name": "actito-web",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "type": "module",
   "description": "The official Actito JS library.",
   "author": "Actito <mobile@actito.com> (https://actito.com)",
@@ -139,14 +139,14 @@
     }
   },
   "dependencies": {
-    "@actito/web-assets": "^5.0.2",
-    "@actito/web-core": "^5.0.2",
-    "@actito/web-geo": "^5.0.2",
-    "@actito/web-in-app-messaging": "^5.0.2",
-    "@actito/web-inbox": "^5.0.2",
-    "@actito/web-push": "^5.0.2",
-    "@actito/web-push-ui": "^5.0.2",
-    "@actito/web-user-inbox": "^5.0.2"
+    "@actito/web-assets": "^5.0.3",
+    "@actito/web-core": "^5.0.3",
+    "@actito/web-geo": "^5.0.3",
+    "@actito/web-in-app-messaging": "^5.0.3",
+    "@actito/web-inbox": "^5.0.3",
+    "@actito/web-push": "^5.0.3",
+    "@actito/web-push-ui": "^5.0.3",
+    "@actito/web-user-inbox": "^5.0.3"
   },
   "devDependencies": {
     "@actito/library-config": "workspace:^",
