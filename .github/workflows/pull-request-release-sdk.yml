@@ -23,6 +23,10 @@ env:
   CDN_LATEST_DIR: packages/actito/dist/cdn/latest
   CDN_BUCKET_PATH: libs/web/v5
 
+  # Beta versions are published to NPM under this dist-tag instead of "latest", so they are never
+  # installed by default.
+  NPM_PRERELEASE_DIST_TAG: beta
+
 jobs:
   validate_version:
     name: Validate the branch version
@@ -137,10 +141,10 @@ jobs:
           NPM_CONFIG_DRY_RUN: true
         run: |
           set -o pipefail
-          yarn lerna publish from-package --yes --pre-dist-tag next 2>&1 | tee "$RUNNER_TEMP/npm-preview.log"
+          yarn lerna publish from-package --yes --pre-dist-tag "${NPM_PRERELEASE_DIST_TAG:?}" 2>&1 | tee "$RUNNER_TEMP/npm-preview.log"
 
           if [ "$PRERELEASE" = "true" ]; then
-            DIST_TAG=next
+            DIST_TAG="$NPM_PRERELEASE_DIST_TAG"
           else
             DIST_TAG=latest
           fi
@@ -257,10 +261,17 @@ jobs:
           fi
 
           RELEASE_URL=$(gh release view "$VERSION" --json url --jq .url)
+          COMMIT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$TARGET"
+          if [ "$PRERELEASE" = "true" ]; then
+            KIND=beta
+          else
+            KIND=stable
+          fi
+
           {
             echo "## GitHub release"
             echo
-            echo "[$VERSION]($RELEASE_URL) (prerelease: $PRERELEASE), targeting \`$TARGET\`"
+            echo "**Draft release:** [$VERSION]($RELEASE_URL) · $KIND · tag will point to [\`${TARGET:0:7}\`]($COMMIT_URL)"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The publish job uses these files, so it publishes exactly what was previewed here.
@@ -318,14 +329,14 @@ jobs:
           path: packages
 
       # Authenticates through NPM trusted publishing, which also generates the provenance statements.
-      # Prereleases are published under the "next" dist-tag, so they are never installed by default.
+      # Beta versions are published under the NPM_PRERELEASE_DIST_TAG dist-tag.
       - name: Publish to NPM
         run: |
           if [ "$DRY_RUN" = "true" ]; then
             export NPM_CONFIG_DRY_RUN=true
           fi
 
-          yarn lerna publish from-package --yes --pre-dist-tag next
+          yarn lerna publish from-package --yes --pre-dist-tag "${NPM_PRERELEASE_DIST_TAG:?}"
 
       - name: Authenticate with AWS
         if: env.DRY_RUN != 'true'
