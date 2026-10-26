@@ -1,0 +1,61 @@
+name: Build and check SDK
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: The commit, branch or tag to check out. Defaults to the one that triggered the workflow.
+        type: string
+        default: ''
+      artifact-name:
+        description: When set, the built files of the libraries are uploaded as an artifact with this name.
+        type: string
+        default: ''
+  workflow_dispatch:
+
+permissions:
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  build_and_check:
+    name: Build and check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build the libraries
+        run: yarn build
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Run tests
+        run: yarn test
+
+      - name: Check package types
+        run: yarn attw
+
+      - name: Upload the build
+        if: inputs.artifact-name != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: |
+            packages/**/dist/
+            !packages/**/node_modules/**

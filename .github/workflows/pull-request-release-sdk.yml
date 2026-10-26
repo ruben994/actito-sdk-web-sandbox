@@ -35,16 +35,14 @@ jobs:
     with:
       branch: ${{ github.event.pull_request.head.ref }}
 
-  # Builds and checks everything, previews what will be published and creates the GitHub release as a
-  # draft. Nothing is published by this job.
-  prepare:
-    name: Prepare release
+  # Runs before the build, so a version mismatch fails the release right away.
+  validate_project_versions:
+    name: Validate the versions throughout the project
     needs:
       - validate_version
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # This is required for requesting the JWT (AWS role)
-      contents: write   # This is required for actions/checkout and for creating the draft GitHub release
+      contents: read    # This is required for actions/checkout
 
     steps:
       - name: Checkout
@@ -52,19 +50,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: yarn
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Validate the versions throughout the project
+      - name: Validate the versions
         env:
           VERSION: ${{ needs.validate_version.outputs.version }}
         run: |
@@ -99,17 +85,54 @@ jobs:
 
           echo "::notice::Preparing version $VERSION"
 
-      - name: Build the libraries
-        run: yarn build
+  # Builds, lints, tests and checks the package types of the merge commit, and keeps the build, so the
+  # release publishes exactly these files.
+  build_and_check:
+    name: Build and check SDK
+    needs:
+      - validate_project_versions
+    uses: ./.github/workflows/build-and-check-sdk.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+      artifact-name: release-build
 
-      - name: Lint
-        run: yarn lint
+  # Previews what will be published and creates the GitHub release as a draft. Nothing is published by
+  # this job.
+  prepare:
+    name: Prepare release
+    needs:
+      - validate_version
+      - build_and_check
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # This is required for requesting the JWT (AWS role)
+      contents: write   # This is required for actions/checkout and for creating the draft GitHub release
 
-      - name: Run tests
-        run: yarn test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Check package types
-        run: yarn attw
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Download the build
+        uses: actions/download-artifact@v8
+        with:
+          name: release-build
+          path: packages
 
       # The latest variant is only built for X.Y.Z versions.
       - name: Check the CDN files
@@ -189,7 +212,7 @@ jobs:
           # A dry run has no access to the bucket, so every local file is listed as an upload.
           preview_sync() {
             if [ "$DRY_RUN" = "true" ]; then
-              find "$1" -type f | sort | sed "s|^$1/\(.*\)$|(dry run) upload: $1/\1 to $2\1|"
+              find "$1" -type f | sort | sed "s|^$1/\(.*\)$|(dryrun) upload: $1/\1 to $2\1|"
             else
               aws s3 sync "$1" "s3://$BUCKET_NAME/$2" --dryrun "${@:3}" | sed "s|s3://$BUCKET_NAME/||"
             fi
@@ -274,15 +297,6 @@ jobs:
             echo "**Draft release:** [$VERSION]($RELEASE_URL) · $KIND · tag will point to [\`${TARGET:0:7}\`]($COMMIT_URL)"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # The publish job uses these files, so it publishes exactly what was previewed here.
-      - name: Upload the build
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-build
-          path: |
-            packages/**/dist/
-            !packages/**/node_modules/**
-
   # Waits for a reviewer to approve the "release" environment before publishing.
   publish:
     name: Publish release
@@ -311,7 +325,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 22.x
+          node-version-file: .nvmrc
           cache: yarn
           registry-url: https://registry.npmjs.org
 

@@ -1,0 +1,19 @@
+name: Build and check PR SDK
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_check:
+    name: SDK
+    uses: ./.github/workflows/build-and-check-sdk.yml
+    permissions:
+      contents: read

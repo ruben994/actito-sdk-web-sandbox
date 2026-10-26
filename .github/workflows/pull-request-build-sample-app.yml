@@ -13,8 +13,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Only runs when the pull request has a preview label. When a label is added, only when it's a
+  # preview label. The upload jobs are skipped with it.
   build:
     name: Build
+    if: >-
+      (contains(github.event.pull_request.labels.*.name, 'preview-sample-app:test') ||
+      contains(github.event.pull_request.labels.*.name, 'preview-sample-app:production')) &&
+      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'preview-sample-app:'))
     uses: ./.github/workflows/build-sample-app.yml
     permissions:
       contents: read

@@ -100,7 +100,7 @@ jobs:
                     comment_id: existingComment.id
                  });
               } else {
-                core.info('No previous warning comment found. Nothing to clean up.')
+                core.info('No previous warning comment found. Nothing to clean up.');
               }
             }
             
