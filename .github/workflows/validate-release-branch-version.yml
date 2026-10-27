@@ -24,7 +24,7 @@ jobs:
       prerelease: ${{ steps.version.outputs.prerelease }}
 
     steps:
-      - name: Validate the version
+      - name: Validate the branch version
         id: version
         env:
           BRANCH: ${{ inputs.branch }}

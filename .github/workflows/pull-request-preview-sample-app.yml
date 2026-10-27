@@ -58,7 +58,7 @@ jobs:
       distribution_id: ${{ secrets.SAMPLE_APP_DISTRIBUTION_ID }}
 
   comment_urls_on_pr:
-    name: Comment PR with live URLs
+    name: Comment PR with sample app live URLs
     needs:
       - upload_test_environment
       - upload_production_environment
