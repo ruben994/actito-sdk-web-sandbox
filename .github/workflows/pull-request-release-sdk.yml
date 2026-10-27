@@ -28,23 +28,24 @@ env:
   NPM_PRERELEASE_DIST_TAG: beta
 
 jobs:
-  validate_version:
+  # Only for merged release branches of this repository, never for branches from forks.
+  validate_branch_version:
     name: Validate the branch version
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    uses: ./.github/workflows/validate-release-version.yml
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/validate-release-branch-version.yml
     with:
       branch: ${{ github.event.pull_request.head.ref }}
 
-  # Builds and checks everything, previews what will be published and creates the GitHub release as a
-  # draft. Nothing is published by this job.
-  prepare:
-    name: Prepare release
+  validate_project_versions:
+    name: Validate the versions throughout the project
     needs:
-      - validate_version
+      - validate_branch_version
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # This is required for requesting the JWT (AWS role)
-      contents: write   # This is required for actions/checkout and for creating the draft GitHub release
+      contents: read    # This is required for actions/checkout
 
     steps:
       - name: Checkout
@@ -52,21 +53,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: yarn
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Validate the versions throughout the project
+      - name: Validate the versions
         env:
-          VERSION: ${{ needs.validate_version.outputs.version }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: |
           FAILED=0
 
@@ -99,22 +88,50 @@ jobs:
 
           echo "::notice::Preparing version $VERSION"
 
-      - name: Build the libraries
-        run: yarn build
+  # Builds, lints, tests and checks the package types of the merge commit, and keeps the build, so the
+  # release publishes exactly these files.
+  build_and_check:
+    name: Build and check SDK
+    needs:
+      - validate_project_versions
+    uses: ./.github/workflows/build-and-check-sdk.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+      artifact-name: release-build
 
-      - name: Lint
-        run: yarn lint
+  # Previews what will be published and creates the GitHub release as a draft. Nothing is published by
+  # this job.
+  prepare:
+    name: Prepare release
+    needs:
+      - validate_branch_version
+      - build_and_check
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # This is required for requesting the JWT (AWS role)
+      contents: write   # This is required for actions/checkout and for creating the draft GitHub release
 
-      - name: Run tests
-        run: yarn test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Check package types
-        run: yarn attw
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup
+
+      - name: Download the build
+        uses: actions/download-artifact@v8
+        with:
+          name: release-build
+          path: packages
 
       # The latest variant is only built for X.Y.Z versions.
       - name: Check the CDN files
         env:
-          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
         run: |
           FAILED=0
 
@@ -136,8 +153,8 @@ jobs:
 
       - name: Preview the NPM packages
         env:
-          VERSION: ${{ needs.validate_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
           NPM_CONFIG_DRY_RUN: true
         run: |
           set -o pipefail
@@ -180,8 +197,8 @@ jobs:
       - name: Preview the CDN upload
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
-          VERSION: ${{ needs.validate_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
         run: |
           set -o pipefail
 
@@ -189,7 +206,7 @@ jobs:
           # A dry run has no access to the bucket, so every local file is listed as an upload.
           preview_sync() {
             if [ "$DRY_RUN" = "true" ]; then
-              find "$1" -type f | sort | sed "s|^$1/\(.*\)$|(dry run) upload: $1/\1 to $2\1|"
+              find "$1" -type f | sort | sed "s|^$1/\(.*\)$|(dryrun) upload: $1/\1 to $2\1|"
             else
               aws s3 sync "$1" "s3://$BUCKET_NAME/$2" --dryrun "${@:3}" | sed "s|s3://$BUCKET_NAME/||"
             fi
@@ -227,8 +244,8 @@ jobs:
       - name: Create the draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_version.outputs.prerelease }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
+          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
           TARGET: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           # The release notes are the contents of the "## <version>" section of the CHANGELOG.md.
@@ -274,20 +291,11 @@ jobs:
             echo "**Draft release:** [$VERSION]($RELEASE_URL) · $KIND · tag will point to [\`${TARGET:0:7}\`]($COMMIT_URL)"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # The publish job uses these files, so it publishes exactly what was previewed here.
-      - name: Upload the build
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-build
-          path: |
-            packages/**/dist/
-            !packages/**/node_modules/**
-
   # Waits for a reviewer to approve the "release" environment before publishing.
   publish:
     name: Publish release
     needs:
-      - validate_version
+      - validate_branch_version
       - prepare
     runs-on: ubuntu-latest
     environment: release
@@ -305,22 +313,14 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup
         with:
-          node-version: 22.x
-          cache: yarn
           registry-url: https://registry.npmjs.org
 
       # NPM trusted publishing requires npm 11.5.1 or later.
       - name: Update npm
         run: npm install -g npm@11
-
-      - name: Install dependencies
-        run: yarn install --immutable
 
       - name: Download the build
         uses: actions/download-artifact@v8
@@ -349,17 +349,17 @@ jobs:
         if: env.DRY_RUN != 'true'
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
-          VERSION: ${{ needs.validate_version.outputs.version }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: aws s3 sync "$CDN_STABLE_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/$VERSION/"
 
       - name: Upload the latest files to the CDN
-        if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
+        if: env.DRY_RUN != 'true' && needs.validate_branch_version.outputs.prerelease == 'false'
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
         run: aws s3 sync "$CDN_LATEST_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/latest/" --delete
 
       - name: Invalidate the latest files in CloudFront
-        if: env.DRY_RUN != 'true' && needs.validate_version.outputs.prerelease == 'false'
+        if: env.DRY_RUN != 'true' && needs.validate_branch_version.outputs.prerelease == 'false'
         env:
           DISTRIBUTION_ID: ${{ secrets.CDN_DISTRIBUTION_ID }}
         run: |
@@ -371,7 +371,7 @@ jobs:
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate_version.outputs.version }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: |
           if [ "$(gh release view "$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
             gh release edit "$VERSION" --draft=false

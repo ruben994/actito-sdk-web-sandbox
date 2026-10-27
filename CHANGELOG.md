@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 5.0.4
+## 5.0.5
 
 - New feature C
 

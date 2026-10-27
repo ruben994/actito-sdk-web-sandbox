@@ -20,7 +20,7 @@ jobs:
     name: Check changelog
     runs-on: ubuntu-latest
     steps:
-      - name: Warn if changelog wasn't updated
+      - name: Warn about a missing changelog update
         uses: actions/github-script@v9
         with:
           script: |
@@ -100,7 +100,7 @@ jobs:
                     comment_id: existingComment.id
                  });
               } else {
-                core.info('No previous warning comment found. Nothing to clean up.')
+                core.info('No previous warning comment found. Nothing to clean up.');
               }
             }
             

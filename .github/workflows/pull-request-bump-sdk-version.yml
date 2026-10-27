@@ -15,17 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate_version:
-    name: Validate version
+  validate_branch_version:
+    name: Validate the branch version
     if: startsWith(github.head_ref, 'release/') && github.event.pull_request.head.repo.full_name == github.repository
-    uses: ./.github/workflows/validate-release-version.yml
+    uses: ./.github/workflows/validate-release-branch-version.yml
     with:
       branch: ${{ github.head_ref }}
 
   bump_version:
     name: Bump version
     needs:
-      - validate_version
+      - validate_branch_version
     runs-on: ubuntu-latest
     permissions:
       contents: write   # This is required for pushing the version bump commit
@@ -38,28 +38,19 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: yarn
-
-      - name: Install dependencies
-        run: yarn install --immutable
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup
 
       # Updates every package.json, lerna.json and yarn.lock, and runs scripts/version.mjs for
       # version.ts and the CHANGELOG.md heading. Files already at the version are left unchanged.
       - name: Bump the version
         env:
-          VERSION: ${{ needs.validate_version.outputs.version }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: yarn lerna version "$VERSION" --force-publish --no-private --no-git-tag-version --no-push --yes
 
       - name: Commit and push
         env:
-          VERSION: ${{ needs.validate_version.outputs.version }}
+          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: |
           git add -u
 
