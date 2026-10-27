@@ -9,7 +9,7 @@ A `chore: bump version to <version>` commit will be automatically pushed to the 
 - updates the version of each library and `lerna.json`,
 - updates the version in `packages/actito-core/src/internal/version.ts`,
 - updates `yarn.lock`,
-- renames the first `## ` heading without a version in the `CHANGELOG.md` to `## <version>`.
+- renames the first `##` heading without a version in the `CHANGELOG.md` to `## <version>`.
 
 The workflows triggered by that commit wait for approval. You can approve them to run the checks on the final code.
 
