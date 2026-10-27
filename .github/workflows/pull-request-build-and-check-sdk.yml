@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build_and_check:
-    name: SDK
+    name: Build and check
     uses: ./.github/workflows/build-and-check-sdk.yml
     permissions:
       contents: read
