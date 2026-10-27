@@ -1,4 +1,4 @@
-name: Update preview environments
+name: Update sample app preview environments
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
       contents: read
 
   upload_test_environment:
-    name: Test
+    name: Upload to test
     needs:
       - build
     if: ${{ inputs.update_test_environment }}
@@ -39,7 +39,7 @@ jobs:
 
   upload_production_environment:
     if: ${{ inputs.update_production_environment }}
-    name: Production
+    name: Upload to production
     needs:
       - build
     uses: ./.github/workflows/upload-sample-app.yml

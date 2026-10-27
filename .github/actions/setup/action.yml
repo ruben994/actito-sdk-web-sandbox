@@ -1,0 +1,26 @@
+name: Setup Node and install dependencies
+description: Enables Corepack, sets up the Node version from .nvmrc with the Yarn cache and installs the dependencies.
+
+inputs:
+  registry-url:
+    description: The NPM registry to authenticate against, needed for publishing.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Setup Node
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+        cache: yarn
+        registry-url: ${{ inputs.registry-url }}
+
+    - name: Install dependencies
+      shell: bash
+      run: yarn install --immutable
