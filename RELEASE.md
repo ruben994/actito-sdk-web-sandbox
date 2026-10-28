@@ -6,7 +6,7 @@
 
 A `chore: bump version to <version>` commit will be automatically pushed to the release branch, making it appear in both pull requests. This commit:
 
-- updates the version of each library and `lerna.json`,
+- updates the version of each published package (the ones in `packages/`) and `lerna.json`,
 - updates the version in `packages/actito-core/src/internal/version.ts`,
 - updates `yarn.lock`,
 - renames the first `##` heading without a version in the `CHANGELOG.md` to `## <version>`.
@@ -34,11 +34,3 @@ If something is wrong, reject the deployment instead. Nothing is published. Push
 Release branches accept stable versions (`release/x.y.z`) and beta versions (`release/x.y.z-beta.n`, e.g. `release/5.1.0-beta.1`). Any other name, such as `release/v5.1.0`, `release/5.1.0-rc.1` or `release/5.1.0-beta`, fails the version validation.
 
 Beta versions are published to NPM under the `beta` dist-tag (`npm install actito-web@beta`) and only uploaded to `libs/web/v5/x.y.z-beta.n` on the CDN. The `latest` dist-tag and `libs/web/v5/latest` are never updated by a beta, and its GitHub release is marked as a pre-release.
-
-## Bumping the version locally
-
-The version can also be bumped locally, which creates the same changes without the GitHub workflow:
-
-```shell
-yarn lerna version x.y.z --force-publish --no-private --no-git-tag-version --no-push
-```
