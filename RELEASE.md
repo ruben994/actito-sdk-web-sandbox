@@ -33,6 +33,6 @@ If something is wrong, reject the deployment instead. Nothing is published. Push
 
 ## Prereleases
 
-Release branches accept stable versions (`release/x.y.z`) and beta versions (`release/x.y.z-beta.n`, e.g. `release/5.1.0-beta.1`). Any other name, such as `release/v5.1.0`, `release/5.1.0-rc.1` or `release/5.1.0-beta`, fails the version validation.
+Release branches accept stable versions (`release/x.y.z`, e.g. `release/5.0.2`) and beta versions (`release/x.y.z-beta.n`, e.g. `release/5.1.0-beta.1`). Any other name, such as `release/v5.1.0`, `release/5.1.0-rc.1` or `release/5.1.0-beta`, fails the version validation.
 
 Beta versions are published to NPM under the `beta` dist-tag (`npm install actito-web@beta`) and only uploaded to `libs/web/v5/x.y.z-beta.n` on the CDN. The `latest` dist-tag and `libs/web/v5/latest` are never updated by a beta, and its GitHub release is marked as a pre-release.
