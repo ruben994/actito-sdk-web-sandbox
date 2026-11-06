@@ -31,6 +31,7 @@ jobs:
       contents: write   # This is required for pushing the version bump commit
     env:
       HUSKY: 0    # Skip the git hooks when committing the version bump
+      VERSION: ${{ needs.validate_branch_version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -41,16 +42,13 @@ jobs:
       - name: Setup Node and install dependencies
         uses: ./.github/actions/setup
 
-      # Updates every package.json, lerna.json and yarn.lock, and runs scripts/version.mjs for
-      # version.ts and the CHANGELOG.md heading. Files already at the version are left unchanged.
+      # Updates the package.json of each published package (the ones in packages/), lerna.json and
+      # yarn.lock, and runs scripts/version.mjs for packages/actito-core/src/internal/version.ts and
+      # the CHANGELOG.md heading. Files already at the version are left unchanged.
       - name: Bump the version
-        env:
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: yarn lerna version "$VERSION" --force-publish --no-private --no-git-tag-version --no-push --yes
 
       - name: Commit and push
-        env:
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: |
           git add -u
 

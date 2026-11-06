@@ -28,7 +28,7 @@ env:
   NPM_PRERELEASE_DIST_TAG: beta
 
 jobs:
-  # Only for merged release branches of this repository, never for branches from forks.
+  # Run only for release branches merged into this repository, never for branches from forks.
   validate_branch_version:
     name: Validate the branch version
     if: >-
@@ -76,6 +76,8 @@ jobs:
           done
 
           # Validate ./packages/actito-core/src/internal/version.ts
+          # The pattern expects the format written by scripts/version.mjs (SDK_VERSION = '<version>'), so keep
+          # both in sync.
           SDK_VERSION=$(sed -nE "s/.*SDK_VERSION = '([^']+)'.*/\1/p" packages/actito-core/src/internal/version.ts)
           if [ "$SDK_VERSION" != "$VERSION" ]; then
             echo "::error file=packages/actito-core/src/internal/version.ts::SDK_VERSION $SDK_VERSION doesn't match $VERSION."
@@ -112,6 +114,9 @@ jobs:
     permissions:
       id-token: write   # This is required for requesting the JWT (AWS role)
       contents: write   # This is required for actions/checkout and for creating the draft GitHub release
+    env:
+      VERSION: ${{ needs.validate_branch_version.outputs.version }}
+      PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
 
     steps:
       - name: Checkout
@@ -130,8 +135,6 @@ jobs:
 
       # The latest variant is only built for X.Y.Z versions.
       - name: Check the CDN files
-        env:
-          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
         run: |
           FAILED=0
 
@@ -153,8 +156,6 @@ jobs:
 
       - name: Preview the NPM packages
         env:
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
           NPM_CONFIG_DRY_RUN: true
         run: |
           set -o pipefail
@@ -197,8 +198,6 @@ jobs:
       - name: Preview the CDN upload
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
         run: |
           set -o pipefail
 
@@ -244,8 +243,6 @@ jobs:
       - name: Create the draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
-          PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
           TARGET: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           # The release notes are the contents of the "## <version>" section of the CHANGELOG.md.
@@ -262,13 +259,19 @@ jobs:
             echo "::warning file=CHANGELOG.md::The \"## $VERSION\" section of the CHANGELOG.md is empty."
           fi
 
+          # Check if there is already a GitHub Release with the current version.
           if gh release view "$VERSION" > /dev/null 2>&1; then
+            # If it is a draft, update its notes and prerelease flag, and
+            # point it to the new merge commit.
             if [ "$(gh release view "$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
               gh release edit "$VERSION" --target "$TARGET" --prerelease="$PRERELEASE" --notes-file "$NOTES_FILE"
             else
-              echo "::notice::The GitHub release $VERSION is already published."
+              # Otherwise, show an error. Releasing it again would overwrite the CDN files of a released version.
+              echo "::error::The GitHub release $VERSION is already published. Use a new version."
+              exit 1
             fi
           else
+            # Otherwise, create it as a draft.
             ARGS=(--draft --target "$TARGET" --title "$VERSION" --notes-file "$NOTES_FILE")
             if [ "$PRERELEASE" = "true" ]; then
               ARGS+=(--prerelease)
@@ -277,6 +280,7 @@ jobs:
             gh release create "$VERSION" "${ARGS[@]}"
           fi
 
+          # Link the draft and the commit its tag will point to in the run summary.
           RELEASE_URL=$(gh release view "$VERSION" --json url --jq .url)
           COMMIT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$TARGET"
           if [ "$PRERELEASE" = "true" ]; then
@@ -302,6 +306,9 @@ jobs:
     permissions:
       id-token: write   # This is required for requesting the JWT (AWS role and NPM trusted publishing)
       contents: write   # This is required for actions/checkout and for publishing the GitHub release
+    env:
+      VERSION: ${{ needs.validate_branch_version.outputs.version }}
+      PRERELEASE: ${{ needs.validate_branch_version.outputs.prerelease }}
 
     steps:
       - name: Announce the dry run
@@ -349,17 +356,16 @@ jobs:
         if: env.DRY_RUN != 'true'
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: aws s3 sync "$CDN_STABLE_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/$VERSION/"
 
       - name: Upload the latest files to the CDN
-        if: env.DRY_RUN != 'true' && needs.validate_branch_version.outputs.prerelease == 'false'
+        if: env.DRY_RUN != 'true' && env.PRERELEASE == 'false'
         env:
           BUCKET_NAME: ${{ secrets.CDN_BUCKET_NAME }}
         run: aws s3 sync "$CDN_LATEST_DIR" "s3://$BUCKET_NAME/$CDN_BUCKET_PATH/latest/" --delete
 
       - name: Invalidate the latest files in CloudFront
-        if: env.DRY_RUN != 'true' && needs.validate_branch_version.outputs.prerelease == 'false'
+        if: env.DRY_RUN != 'true' && env.PRERELEASE == 'false'
         env:
           DISTRIBUTION_ID: ${{ secrets.CDN_DISTRIBUTION_ID }}
         run: |
@@ -371,10 +377,4 @@ jobs:
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
-        run: |
-          if [ "$(gh release view "$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
-            gh release edit "$VERSION" --draft=false
-          else
-            echo "::notice::The GitHub release $VERSION is already published."
-          fi
+        run: gh release edit "$VERSION" --draft=false

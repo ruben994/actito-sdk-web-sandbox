@@ -1,4 +1,4 @@
-name: Validate release version
+name: Validate release branch version
 
 on:
   workflow_call:

@@ -45,7 +45,7 @@ jobs:
               return;
             }
             
-            core.info(`feat/fix commits found. Total commits analyzed: ${commits.length}`);
+            core.info(`feat/fix commits found. Total commits analyzed: ${commits.length}.`);
             core.endGroup();
             
             core.startGroup('Verify CHANGELOG.md');

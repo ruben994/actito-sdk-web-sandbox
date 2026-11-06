@@ -8,8 +8,16 @@ on:
       - synchronize
       - labeled
 
+# Runs started by a label other than preview-sample-app:test or preview-sample-app:production are
+# skipped, so they get their own group (with the run ID) and don't cancel a deploy in progress.
+# Keep the label names in sync with the build job condition.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number }}${{
+    github.event.action == 'labeled' &&
+    github.event.label.name != 'preview-sample-app:test' &&
+    github.event.label.name != 'preview-sample-app:production' &&
+    format('-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -20,13 +28,15 @@ jobs:
     if: >-
       (contains(github.event.pull_request.labels.*.name, 'preview-sample-app:test') ||
       contains(github.event.pull_request.labels.*.name, 'preview-sample-app:production')) &&
-      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'preview-sample-app:'))
+      (github.event.action != 'labeled' ||
+      github.event.label.name == 'preview-sample-app:test' ||
+      github.event.label.name == 'preview-sample-app:production')
     uses: ./.github/workflows/build-sample-app.yml
     permissions:
       contents: read
 
   upload_test_environment:
-    name: Upload to Test
+    name: Upload to test
     needs:
       - build
     if: contains(github.event.pull_request.labels.*.name, 'preview-sample-app:test')
@@ -42,7 +52,7 @@ jobs:
       distribution_id: ${{ secrets.SAMPLE_APP_TEST_DISTRIBUTION_ID }}
 
   upload_production_environment:
-    name: Upload to Production
+    name: Upload to production
     if: contains(github.event.pull_request.labels.*.name, 'preview-sample-app:production')
     needs:
       - build
