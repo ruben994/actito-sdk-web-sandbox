@@ -16,15 +16,9 @@ env:
   # published to NPM or uploaded to the CDN.
   DRY_RUN: ${{ github.repository != 'actito/actito-sdk-web' }}
 
-  # The built CDN files, and the bucket path they're uploaded to: <path>/<version>/ and <path>/latest/.
-  # The core import URLs in the CDN build (configs/library-config/rollup.umbrella.config.js) must use
-  # the same bucket path.
   CDN_STABLE_DIR: packages/actito/dist/cdn/stable
   CDN_LATEST_DIR: packages/actito/dist/cdn/latest
   CDN_BUCKET_PATH: libs/web/v5
-
-  # Beta versions are published to NPM under this dist-tag instead of "latest", so they are never
-  # installed by default.
   NPM_PRERELEASE_DIST_TAG: beta
 
 jobs:
@@ -55,32 +49,32 @@ jobs:
 
       - name: Validate the versions
         env:
-          VERSION: ${{ needs.validate_branch_version.outputs.version }}
+          BRANCH_VERSION: ${{ needs.validate_branch_version.outputs.version }}
         run: |
           FAILED=0
 
           # Validate lerna.json version
           LERNA_VERSION=$(node -p "require('./lerna.json').version")
-          if [ "$LERNA_VERSION" != "$VERSION" ]; then
-            echo "::error file=lerna.json::Version $LERNA_VERSION doesn't match $VERSION."
+          if [ "$LERNA_VERSION" != "$BRANCH_VERSION" ]; then
+            echo "::error file=lerna.json::Version $LERNA_VERSION doesn't match $BRANCH_VERSION."
             FAILED=1
           fi
 
           # Validate each package.json version of every actito package
           for MANIFEST in packages/*/package.json; do
             PACKAGE_VERSION=$(node -p "require('./$MANIFEST').version")
-            if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
-              echo "::error file=$MANIFEST::Version $PACKAGE_VERSION doesn't match $VERSION."
+            if [ "$PACKAGE_VERSION" != "$BRANCH_VERSION" ]; then
+              echo "::error file=$MANIFEST::Version $PACKAGE_VERSION doesn't match $BRANCH_VERSION."
               FAILED=1
             fi
           done
 
-          # Validate ./packages/actito-core/src/internal/version.ts
-          # The pattern expects the format written by scripts/version.mjs (SDK_VERSION = '<version>'), so keep
-          # both in sync.
-          SDK_VERSION=$(sed -nE "s/.*SDK_VERSION = '([^']+)'.*/\1/p" packages/actito-core/src/internal/version.ts)
-          if [ "$SDK_VERSION" != "$VERSION" ]; then
-            echo "::error file=packages/actito-core/src/internal/version.ts::SDK_VERSION $SDK_VERSION doesn't match $VERSION."
+          # Validate the SDK_VERSION in actito-core
+          # The pattern expects the format written by scripts/version.mjs (SDK_VERSION = '<version>')
+          SDK_VERSION_FILE=packages/actito-core/src/internal/version.ts
+          SDK_VERSION=$(sed -nE "s/.*SDK_VERSION = '([^']+)'.*/\1/p" "$SDK_VERSION_FILE")
+          if [ "$SDK_VERSION" != "$BRANCH_VERSION" ]; then
+            echo "::error file=$SDK_VERSION_FILE::SDK_VERSION $SDK_VERSION doesn't match $BRANCH_VERSION."
             FAILED=1
           fi
 
@@ -88,10 +82,8 @@ jobs:
             exit 1
           fi
 
-          echo "::notice::Preparing version $VERSION"
+          echo "::notice::Preparing version $BRANCH_VERSION"
 
-  # Builds, lints, tests and checks the package types of the merge commit, and keeps the build, so the
-  # release publishes exactly these files.
   build_and_check:
     name: Build and check SDK
     needs:
@@ -103,8 +95,6 @@ jobs:
       ref: ${{ github.event.pull_request.merge_commit_sha }}
       artifact-name: release-build
 
-  # Previews what will be published and creates the GitHub release as a draft. Nothing is published by
-  # this job.
   prepare:
     name: Prepare release
     needs:
@@ -133,7 +123,6 @@ jobs:
           name: release-build
           path: packages
 
-      # The latest variant is only built for X.Y.Z versions.
       - name: Check the CDN files
         run: |
           FAILED=0
@@ -272,12 +261,8 @@ jobs:
             fi
           else
             # Otherwise, create it as a draft.
-            ARGS=(--draft --target "$TARGET" --title "$VERSION" --notes-file "$NOTES_FILE")
-            if [ "$PRERELEASE" = "true" ]; then
-              ARGS+=(--prerelease)
-            fi
-
-            gh release create "$VERSION" "${ARGS[@]}"
+            gh release create "$VERSION" --draft --target "$TARGET" --title "$VERSION" \
+              --prerelease="$PRERELEASE" --notes-file "$NOTES_FILE"
           fi
 
           # Link the draft and the commit its tag will point to in the run summary.
@@ -335,8 +320,6 @@ jobs:
           name: release-build
           path: packages
 
-      # Authenticates through NPM trusted publishing, which also generates the provenance statements.
-      # Beta versions are published under the NPM_PRERELEASE_DIST_TAG dist-tag.
       - name: Publish to NPM
         run: |
           if [ "$DRY_RUN" = "true" ]; then
@@ -373,7 +356,6 @@ jobs:
             --distribution-id "$DISTRIBUTION_ID" \
             --paths "/$CDN_BUCKET_PATH/latest/*"
 
-      # Publishing the draft creates the tag on the merge commit.
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
