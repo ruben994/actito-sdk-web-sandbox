@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.0.6-beta.1
+
+- Text
+
 ## 5.0.5
 
 - New feature C
